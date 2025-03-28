@@ -34,9 +34,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
         title: Text('My Tasks'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Icon(Icons.person),
             onPressed: () {
-              logout(context);
+              Navigator.pushNamed(context, '/profile');
             },
           ),
         ],
@@ -194,7 +194,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         trailing: _buildPriorityBadge(task.priority),
         onTap: () => Navigator.pushNamed(
           context,
-          '/task-detail',
+          '/task-details',
           arguments: task,
         ),
       ),

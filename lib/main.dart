@@ -9,7 +9,9 @@ import 'package:task_manager/screens/tasks/addtask.dart';
 import 'package:task_manager/screens/tasks/edittask.dart';
 import 'package:task_manager/screens/tasks/taskdetails.dart';
 import 'package:task_manager/screens/tasks/tasklist.dart';
+import 'package:task_manager/screens/profile/profile_screen.dart';
 import 'constants/colors.dart';
+import 'constants/styles.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,14 +33,12 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        // Card Theme
         cardTheme: CardTheme(
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        // Input Decoration Theme
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.grey[100],
@@ -60,7 +60,6 @@ class MyApp extends StatelessWidget {
           ),
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
-        // Button Theme
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -70,28 +69,25 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasData) {
-            return TaskListScreen();
-          }
-
-          return LoginScreen();
-        },
-      ),
       routes: {
+        '/': (context) => StreamBuilder(
+              stream: FirebaseAuth.instance.authStateChanges(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return TaskListScreen();
+                } else {
+                  return LoginScreen();
+                }
+              },
+            ),
         '/login': (context) => LoginScreen(),
-        '/tasks': (context) => TaskListScreen(),
         '/register': (context) => RegisterScreen(),
+        '/forgot-password': (context) => ForgotPasswordScreen(),
+        '/tasks': (context) => TaskListScreen(),
         '/add-task': (context) => AddTaskScreen(),
-        '/task-detail': (context)=> TaskDetailScreen(),
-        '/edit-task': (context)=> EditTaskScreen(),
-        '/forgot-password': (context)=> ForgotPasswordScreen(),
+        '/edit-task': (context) => EditTaskScreen(),
+        '/task-details': (context) => TaskDetailScreen(),
+        '/profile': (context) => ProfileScreen(),
       },
     );
   }
@@ -109,6 +105,13 @@ class ErrorHandler {
           borderRadius: BorderRadius.circular(10),
         ),
         margin: EdgeInsets.all(10),
+        duration: Duration(milliseconds: 2000),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -123,6 +126,13 @@ class ErrorHandler {
           borderRadius: BorderRadius.circular(10),
         ),
         margin: EdgeInsets.all(10),
+        duration: Duration(milliseconds: 2000),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
