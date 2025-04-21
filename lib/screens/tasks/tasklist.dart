@@ -132,26 +132,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          Spacer(),
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Implement search
-            },
-            tooltip: 'Search Tasks',
-          ),
-          IconButton(
-            icon: Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // Implement notifications
-            },
-            tooltip: 'Notifications',
-          ),
-          SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: AppColors.primaryColor,
-            child: Icon(Icons.person_outline, color: Colors.white),
-          ),
         ],
       ),
     );
