@@ -58,7 +58,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         final taskService = await _taskServiceFuture;
 
         final newTask = Task(
-          id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID generation
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: _titleController.text,
           description: _descriptionController.text,
           dueDate: _selectedDueDate,
@@ -72,7 +72,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating task: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error creating task: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       } finally {
         if (mounted) {
@@ -86,96 +89,174 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add New Task'),
-        actions: [
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: isSmallScreen ? double.infinity : 500,
+        constraints: BoxConstraints(maxHeight: 700),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildForm(),
+              ),
+            ),
+            _buildFooter(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[200]!),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Add New Task',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Spacer(),
           IconButton(
-            icon: Icon(Icons.check),
-            onPressed: _isSubmitting ? null : _createTask,
+            icon: Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+            tooltip: 'Close',
           ),
         ],
       ),
-      body: FutureBuilder<TaskService>(
-        future: _taskServiceFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+  Widget _buildForm() {
+    return FutureBuilder<TaskService>(
+      future: _taskServiceFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: AppStyles.screenPadding,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'Enter task title',
-                        border: OutlineInputBorder(),
-                      ),
-                      enabled: !_isSubmitting,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        return Padding(
+          padding: EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'Enter task title',
+                    prefixIcon: Icon(Icons.title_outlined),
+                  ),
+                  enabled: !_isSubmitting,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a title';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Enter task description',
+                    prefixIcon: Icon(Icons.description_outlined),
+                    alignLabelWithHint: true,
+                  ),
+                  enabled: !_isSubmitting,
+                  maxLines: 3,
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Due Date',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                SizedBox(height: 8),
+                InkWell(
+                  onTap: _isSubmitting ? null : () => _selectDate(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    SizedBox(height: AppStyles.spacingL),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'Enter task description',
-                        border: OutlineInputBorder(),
-                      ),
-                      enabled: !_isSubmitting,
-                      maxLines: 3,
-                    ),
-                    SizedBox(height: AppStyles.spacingL),
-                    Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.calendar_today, color: Colors.grey),
-                        SizedBox(width: AppStyles.spacingS),
+                        Icon(Icons.calendar_today_outlined,
+                            color: AppColors.textSecondary),
+                        SizedBox(width: 12),
                         Text(
-                          'Due Date: ${_selectedDueDate.toString().split(' ')[0]}',
-                          style: AppStyles.bodyText1,
+                          _selectedDueDate.toString().split(' ')[0],
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                         Spacer(),
-                        TextButton(
-                          onPressed: _isSubmitting ? null : () => _selectDate(context),
-                          child: Text('Select Date'),
-                        ),
+                        Icon(Icons.arrow_drop_down,
+                            color: AppColors.textSecondary),
                       ],
                     ),
-                    SizedBox(height: AppStyles.spacingL),
-                    Text(
-                      'Priority',
-                      style: AppStyles.subtitle1,
-                    ),
-                    SizedBox(height: AppStyles.spacingS),
-                    DropdownButtonFormField<String>(
+                  ),
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Priority',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
                       value: _selectedPriority,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
+                      isExpanded: true,
                       items: ['low', 'medium', 'high'].map((String priority) {
                         return DropdownMenuItem<String>(
                           value: priority,
                           child: Row(
                             children: [
                               Container(
-                                width: 12,
-                                height: 12,
+                                width: 8,
+                                height: 8,
                                 decoration: BoxDecoration(
                                   color: _getPriorityColor(priority),
                                   shape: BoxShape.circle,
@@ -184,65 +265,79 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               SizedBox(width: 8),
                               Text(
                                 priority.toUpperCase(),
-                                style: AppStyles.bodyText1,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                             ],
                           ),
                         );
                       }).toList(),
-                      onChanged: _isSubmitting ? null : (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedPriority = newValue;
-                          });
-                        }
-                      },
+                      onChanged: _isSubmitting
+                          ? null
+                          : (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedPriority = newValue;
+                                });
+                              }
+                            },
                     ),
-                    SizedBox(height: AppStyles.spacingXL),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _createTask,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: _isSubmitting
-                              ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                              : Text(
-                            'Create Task',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.grey[200]!),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: _isSubmitting ? null : _createTask,
+            child: _isSubmitting
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text('Create Task'),
+          ),
+        ],
       ),
     );
   }
 
   Color _getPriorityColor(String priority) {
     switch (priority) {
-      case 'high': return AppColors.highPriority;
-      case 'medium': return AppColors.mediumPriority;
-      case 'low': return AppColors.lowPriority;
-      default: return AppColors.mediumPriority;
+      case 'high':
+        return AppColors.highPriority;
+      case 'medium':
+        return AppColors.mediumPriority;
+      case 'low':
+        return AppColors.lowPriority;
+      default:
+        return AppColors.mediumPriority;
     }
   }
 }

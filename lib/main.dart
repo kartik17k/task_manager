@@ -31,42 +31,83 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primaryColor,
           brightness: Brightness.light,
+          primary: AppColors.primaryColor,
+          secondary: AppColors.accentColor,
+          surface: Colors.white,
+          background: AppColors.background,
         ),
         useMaterial3: true,
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        fontFamily: 'Inter',
+        appBarTheme: AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary,
+          titleTextStyle: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        cardTheme: CardTheme(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          color: Colors.white,
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.grey[50],
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: BorderSide(color: Colors.grey[200]!),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: BorderSide(color: Colors.grey[200]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primaryColor),
+            borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red),
+            borderSide: BorderSide(color: AppColors.error),
           ),
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          hintStyle: TextStyle(color: AppColors.textHint),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            backgroundColor: AppColors.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            textStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primaryColor,
+            textStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primaryColor,
+          unselectedItemColor: AppColors.textSecondary,
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
         ),
       ),
       routes: {

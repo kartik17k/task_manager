@@ -57,6 +57,19 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       initialDate: _selectedDueDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryColor,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _selectedDueDate) {
       setState(() {
@@ -87,7 +100,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating task: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error updating task: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         );
       } finally {
         if (mounted) {
@@ -101,20 +122,54 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
     if (!_isInitialized) {
       return Scaffold(
-        appBar: AppBar(title: Text('Edit Task')),
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          iconTheme: IconThemeData(color: AppColors.textPrimary),
+        ),
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+          ),
+        ),
       );
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Edit Task'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        title: Text(
+          'Edit Task',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.check),
+            icon: _isSaving
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryColor,
+                      ),
+                    ),
+                  )
+                : Icon(Icons.check),
             onPressed: _isSaving ? null : _saveTask,
+            tooltip: 'Save Changes',
           ),
         ],
       ),
@@ -122,135 +177,233 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         future: _taskServiceFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              ),
+            );
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            );
           }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: AppStyles.screenPadding,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Title',
-                        border: OutlineInputBorder(),
+          return Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 600),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 16 : 32,
+                      vertical: 24,
+                    ),
+                    child: Card(
+                      elevation: isSmallScreen ? 0 : 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      enabled: !_isSaving,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: AppStyles.spacingL),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(),
-                      ),
-                      enabled: !_isSaving,
-                      maxLines: 3,
-                    ),
-                    SizedBox(height: AppStyles.spacingL),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, color: Colors.grey),
-                        SizedBox(width: AppStyles.spacingS),
-                        Text(
-                          'Due Date: ${_selectedDueDate.toString().split(' ')[0]}',
-                          style: AppStyles.bodyText1,
-                        ),
-                        Spacer(),
-                        TextButton(
-                          onPressed: _isSaving ? null : () => _selectDate(context),
-                          child: Text('Change Date'),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: AppStyles.spacingL),
-                    Text(
-                      'Priority',
-                      style: AppStyles.subtitle1,
-                    ),
-                    SizedBox(height: AppStyles.spacingS),
-                    DropdownButtonFormField<String>(
-                      value: _selectedPriority,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
-                      items: ['low', 'medium', 'high'].map((String priority) {
-                        return DropdownMenuItem<String>(
-                          value: priority,
-                          child: Row(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: _getPriorityColor(priority),
-                                  shape: BoxShape.circle,
+                              TextFormField(
+                                controller: _titleController,
+                                decoration: InputDecoration(
+                                  labelText: 'Title',
+                                  hintText: 'Enter task title',
+                                  prefixIcon: Icon(Icons.title),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
+                                enabled: !_isSaving,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter a title';
+                                  }
+                                  return null;
+                                },
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                priority.toUpperCase(),
-                                style: TextStyle(
-                                  color: _getPriorityColor(priority),
+                              SizedBox(height: 24),
+                              TextFormField(
+                                controller: _descriptionController,
+                                decoration: InputDecoration(
+                                  labelText: 'Description',
+                                  hintText: 'Enter task description',
+                                  prefixIcon: Icon(Icons.description_outlined),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  alignLabelWithHint: true,
+                                ),
+                                enabled: !_isSaving,
+                                maxLines: 3,
+                              ),
+                              SizedBox(height: 24),
+                              Container(
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[200]!),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Task Details',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    InkWell(
+                                      onTap: _isSaving
+                                          ? null
+                                          : () => _selectDate(context),
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: Colors.grey[300]!),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today_outlined,
+                                              size: 20,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            SizedBox(width: 12),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Due Date',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 4),
+                                                Text(
+                                                  _selectedDueDate
+                                                      .toString()
+                                                      .split(' ')[0],
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Spacer(),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Priority',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    DropdownButtonFormField<String>(
+                                      value: _selectedPriority,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      items: ['low', 'medium', 'high']
+                                          .map((String priority) {
+                                        return DropdownMenuItem<String>(
+                                          value: priority,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(
+                                                  color: _getPriorityColor(
+                                                      priority),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                priority.toUpperCase(),
+                                                style: TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: _isSaving
+                                          ? null
+                                          : (value) {
+                                              if (value != null) {
+                                                setState(() {
+                                                  _selectedPriority = value;
+                                                });
+                                              }
+                                            },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
-                      onChanged: _isSaving ? null : (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedPriority = newValue;
-                          });
-                        }
-                      },
-                    ),
-                    SizedBox(height: AppStyles.spacingXL),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isSaving ? null : _saveTask,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: _isSaving
-                              ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                              : Text(
-                            'Save Changes',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -260,11 +413,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   }
 
   Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'high': return AppColors.highPriority;
-      case 'medium': return AppColors.mediumPriority;
-      case 'low': return AppColors.lowPriority;
-      default: return AppColors.mediumPriority;
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return AppColors.highPriority;
+      case 'medium':
+        return AppColors.mediumPriority;
+      case 'low':
+        return AppColors.lowPriority;
+      default:
+        return AppColors.mediumPriority;
     }
   }
 }

@@ -18,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
   bool _isEditing = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -44,92 +45,211 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           await user.updateDisplayName(_usernameController.text);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully')),
+            SnackBar(
+              content: Text('Profile updated successfully'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           );
-          setState(() => _isEditing = false);
+          setState(() {
+            _isEditing = false;
+            _isLoading = false;
+          });
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         );
+        setState(() => _isLoading = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Profile'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: () {
-              if (_isEditing) {
-                _updateProfile();
-              } else {
-                setState(() => _isEditing = true);
-              }
-            },
-          ),
+          if (_isEditing)
+            IconButton(
+              icon: _isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryColor,
+                        ),
+                      ),
+                    )
+                  : Icon(Icons.save_outlined),
+              onPressed: _isLoading ? null : _updateProfile,
+              tooltip: 'Save Changes',
+            )
+          else
+            IconButton(
+              icon: Icon(Icons.edit_outlined),
+              onPressed: () => setState(() => _isEditing = true),
+              tooltip: 'Edit Profile',
+            ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      body: Center(
+        child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[300],
-                  child: Icon(Icons.person, size: 50, color: Colors.grey[600]),
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                enabled: _isEditing,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a username';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                enabled: false,
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              Container(
+                constraints: BoxConstraints(maxWidth: 400),
+                padding:
+                    EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 32),
+                child: Card(
+                  elevation: isSmallScreen ? 0 : 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text('Sign Out'),
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor:
+                                    AppColors.primaryColor.withOpacity(0.1),
+                                child: Icon(
+                                  Icons.person_outline,
+                                  size: 50,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              if (_isEditing)
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 24),
+                          Text(
+                            'Profile Settings',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 32),
+                          TextFormField(
+                            controller: _usernameController,
+                            decoration: InputDecoration(
+                              labelText: 'Username',
+                              hintText: 'Enter your username',
+                              prefixIcon: Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            enabled: _isEditing,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a username';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              hintText: 'Your email address',
+                              prefixIcon: Icon(Icons.email_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                            ),
+                            enabled: false,
+                          ),
+                          SizedBox(height: 32),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await FirebaseAuth.instance.signOut();
+                              Navigator.of(context)
+                                  .pushReplacementNamed('/login');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.logout_outlined),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Sign Out',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
